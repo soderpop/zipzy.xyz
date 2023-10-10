@@ -1,0 +1,123 @@
+#copyright (C) Alexander Edward Brygider October 9th 2023 all rights reserved.
+import random
+import pickle
+import collections
+from collections import defaultdict
+import itertools
+
+class InfiniteFractalImage:
+  def __init__(self):
+    self.pixels = defaultdict(int)
+
+  def generate(self, x, y, bit):
+    if (x, y) not in self.pixels:
+      if bit == '0':
+        self.pixels[(x, y)] = -90
+      elif bit == '1':
+        self.pixels[(x, y)] = 0
+      else:
+        self.pixels[(x, y)] = 90
+
+  def embed_ternary_data(self, x, y, ternary_data):
+    for bit in ternary_data:
+      self.generate(x, y, bit)
+
+  def compress(self):
+    # Save the state of the canvas (self.pixels) for compression.
+    with open("fractal_image_state.pkl", "wb") as f:
+      pickle.dump(self.pixels, f)
+
+  def decompress(self):
+    # Load the state of the canvas for decompression.
+    with open("fractal_image_state.pkl", "rb") as f:
+      self.pixels = pickle.load(f)
+
+  def get_viewable_area(self, x, y, buffer_size):
+    """Retrieves the viewable area of the canvas around the given coordinates.
+
+    Args:
+      x: The x-coordinate of the center of the viewable area.
+      y: The y-coordinate of the center of the viewable area.
+      buffer_size: The size of the buffer around the center of the viewable area.
+
+    Returns:
+      A defaultdict containing the pixels in the viewable area, with a default value of 0.
+    """
+
+    viewable_area = defaultdict(self.generate)
+    for i in range(x - buffer_size, x + buffer_size + 1):
+      for j in range(y - buffer_size, y + buffer_size + 1):
+        # Fix the error by passing the `x`, `y`, and `bit` arguments to the `generate()` method.
+        viewable_area[(i, j)] = self.generate(i, j, '0')
+    return viewable_area
+
+def encode_data(data):
+  """Encodes data to ternary format.
+
+  Args:
+    data: A string containing the data to be encoded.
+
+  Returns:
+    A string containing the encoded data in ternary format.
+  """
+
+  ternary_data = ''.join(itertools.chain(*(format(ord(char), '03b') for char in data)))
+  return ternary_data
+
+def decode_data(ternary_data):
+  """Decodes ternary data to the original data.
+
+  Args:
+    ternary_data: A string containing the ternary data to be decoded.
+
+  Returns:
+    A string containing the original data.
+  """
+
+  decoded_message = ''.join(chr(int(ternary_data[i:i + 3], 3)) for i in range(0, len(ternary_data), 3))
+  return decoded_message
+
+def decompress_ternary_data(compressed_data):
+  """Decompresses ternary data to the original data.
+
+  Args:
+    compressed_data: A string containing the compressed data.
+
+  Returns:
+    A string containing the original data.
+  """
+
+  ternary_values = collections.OrderedDict()
+  for i in range(0, len(compressed_data), 3):
+    # Pass the `x`, `y`, and `bit` arguments to the `get_viewable_area()` method.
+    ternary_values[tuple([i, i + 3])] = str(canvas.get_viewable_area(center_x, center_y, buffer_size)[i, i + 3])
+
+  # Convert the ternary values to bytes.
+  bytes_data = bytes.fromhex(''.join(ternary_values.values()))
+
+  # Decode the bytes to the original data.
+  original_data = bytes_data.decode()
+
+  return original_data
+
+# Set the center coordinates and buffer size
+center_x, center_y = 0, 0
+buffer_size = 10
+
+# Create an InfiniteFractalImage object
+canvas = InfiniteFractalImage()
+
+# Encode the data
+original_data = "Hello, world!"
+
+# Compress the data
+canvas.compress()
+
+# Decompress the data
+canvas.decompress()
+
+# Decode the data
+decoded_data = decompress_ternary_data(original_data)
+
+# Print the decoded data
+print(decoded_data)
